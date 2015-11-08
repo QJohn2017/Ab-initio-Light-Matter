@@ -1,0 +1,42 @@
+#!python
+# Cathal O Broin - cathal.obroin4 at mail.dcu.ie - 2015
+# This work is not developed in affiliation with any organisation.
+#
+# This file is part of AILM.
+#
+# AILM is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# AILM is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with AILM.  If not, see <http://www.gnu.org/licenses/>.
+
+####### Settings ####################################
+Import('MODE')
+
+Program = 'ailm'
+Compiler = 'g++'
+Path = 'include'
+
+if MODE == 'release':
+    CPPFlags = ' -std=c++14 -Wall -fdiagnostics-color=always'
+elif MODE == 'debug':
+    CPPFlags = '-g -std=c++14 -Wall -Wextra -fdiagnostics-color=always'
+else:
+    print 'Flags not specified'
+
+Src = ['Integrators.cpp', 'main.cpp', 'Splines.cpp']
+Libs = ['netcdf_c++', 'boost_serialization', 'config++', '-lgsl', '-lgslcblas', '-lblas', '-llapack']
+
+######################################################
+
+env = Environment(platform = 'posix', tool=[Compiler], CPPPATH = Path, LIBS=Libs)
+
+env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags)
+
