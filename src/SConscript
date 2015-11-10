@@ -37,6 +37,15 @@ Libs = ['netcdf_c++', 'boost_serialization', 'config++', '-lgsl', '-lgslcblas', 
 ######################################################
 
 env = Environment(platform = 'posix', tool=[Compiler], CPPPATH = Path, LIBS=Libs)
+env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags)
 
+Program = 'prop'
+Src = ['main.prop.cpp']
+env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags)
+
+Libs = [Libs, 'gtest']
+env.Replace(LIBS=Libs)
+Program = 'unittests'
+Src = ['tests.cpp']
 env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags)
 

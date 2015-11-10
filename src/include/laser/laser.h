@@ -31,77 +31,77 @@ namespace cathal
 namespace laser
 {
 
-    typedef real (* carrier)(real);
-    class pulse
+typedef real (* carrier)(real);
+class pulse
+{
+    protected :
+    unsigned int Train;
+    real Tau, Shift, Duration;
+
+    private :
+    virtual pulsetype PulseDef(real t)
     {
-        protected :
-        unsigned int Train;
-        real Tau, Shift, Duration;
-
-        private :
-        virtual pulsetype PulseDef(real t)
-        {
-            return real(0.0);
-        }
-
-        public :
-        pulse(unsigned int train, real tau, real shift) : Train(train), Tau(tau), Shift(shift) { }
-        pulsetype E(real t)
-        {
-            pulsetype EVal = real(0.0);
-            for (unsigned int i = 0; i < Train; i++)
-                EVal += PulseDef(t - i*Tau - Shift);
-            return EVal;
-        }
-
-        friend class field;
-    };
-
-    class field
-    {
-        std::vector<pulse *> Pulses;
-        vecpot Vec;
-        real Time;
-        quadrature::gauss * Gauss;
-
-        public :
-        real End;
-        pulsetype E(real t);
-        vecpot A(real t0, real t1);
-        field(real n);
-        void AddPulse(pulse * p);
-    };
-    pulsetype EVal(real t, field * Pulse)
-    {
-        return Pulse->E(t);
+        return real(0.0);
     }
 
-    pulsetype field::E(real t)
+    public :
+    pulse(unsigned int train, real tau, real shift) : Train(train), Tau(tau), Shift(shift) { }
+    pulsetype E(real t)
     {
-        real Val = real(0.0);            
-        //for (auto p = Pulses.begin(); p != Pulses.end(); p++)
-        for (auto &p : Pulses)
-            Val += p->E(t);
+        pulsetype EVal = real(0.0);
+        for (unsigned int i = 0; i < Train; i++)
+            EVal += PulseDef(t - i*Tau - Shift);
+        return EVal;
     }
 
-    vecpot field::A(real t0, real t1)
-    {
-        Vec += Gauss->Quad(t0, t1, EVal, this);
-    }
+    friend class field;
+};
 
-    field::field(real n)
-    {
-        End = real(0.0);
-        Vec = vecpot(0.0);
-        Gauss = new quadrature::gauss(n);
-    }
+class field
+{
+    std::vector<pulse *> Pulses;
+    vecpot Vec;
+    real Time;
+    quadrature::gauss * Gauss;
 
-    void field::AddPulse(pulse * p)
-    {
-        Pulses.push_back(p);
-        if (End < p->Duration)
-            End = p->Duration;
-    }
+    public :
+    real End;
+    pulsetype E(real t);
+    vecpot A(real t0, real t1);
+    field(real n);
+    void AddPulse(pulse * p);
+};
+pulsetype EVal(real t, field * Pulse)
+{
+    return Pulse->E(t);
+}
+
+pulsetype field::E(real t)
+{
+    real Val = real(0.0);            
+    //for (auto p = Pulses.begin(); p != Pulses.end(); p++)
+    for (auto &p : Pulses)
+        Val += p->E(t);
+}
+
+vecpot field::A(real t0, real t1)
+{
+    Vec += Gauss->Quad(t0, t1, EVal, this);
+}
+
+field::field(real n)
+{
+    End = real(0.0);
+    Vec = vecpot(0.0);
+    Gauss = new quadrature::gauss(n);
+}
+
+void field::AddPulse(pulse * p)
+{
+    Pulses.push_back(p);
+    if (End < p->Duration)
+        End = p->Duration;
+}
 }
 }
 #endif

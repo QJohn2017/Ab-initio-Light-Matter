@@ -1,3 +1,27 @@
+/* Cathal O Broin - cathal.obroin4 at mail.dcu.ie - 2015
+   This work is not developed in affiliation with any organisation.
+  
+   This file is part of AILM.
+
+   AILM is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   AILM is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with AILM.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/*****************************************************************
+ * 
+ *  Unit tests for core functionality
+ * 
+ *****************************************************************/
+
 #include <iostream>
 #include <vector>
 #include <array>
@@ -7,8 +31,13 @@ typedef double vecpot;
 #include "laser/sine.h"
 #include "laser/gauss.h"
 #include "laser/trape.h"
+#include "util/array.h"
+#include "util/banded.h"
+#include "util/io.h"
 #include "numeric/sequence.h"
 #include "numeric/type.h"
+#include "numeric/krylov.h"
+#include "numeric/splines.h"
 #include <gtest/gtest.h>
 
 using namespace cathal;
@@ -118,6 +147,7 @@ TEST(LaserPulse, HandlesGauss)
     std::vector<std::array<real, 3>> Test {{0x0p+0, -0x1.7226feea6dd5ap-52, 0x0p+0},{0x1.5d1745d1745d1p+2, -0x1.001828467497cp-39, 0x1.a2b4dbea6fde9p-41},{0x1.5d1745d1745d1p+3, 0x1.6431bc2691813p-27, 0x1.80274918dd99cp-27},{0x1.05d1745d1745dp+4, 0x1.af47090a1b8e9p-17, 0x1.082bf8402990cp-17},{0x1.5d1745d1745d1p+4, 0x1.5a23bd40c8c44p-10, 0x1.1cb89dfb2632cp-14},{0x1.b45d1745d1745p+4, 0x1.3c5922461a20bp-8, -0x1.f2e54116a051ap-6},{0x1.05d1745d1745dp+5, -0x1.ca5fbec696597p-4, -0x1.3dd31617e0c19p-3},{0x1.31745d1745d17p+5, -0x1.351a784f59dcdp-3, 0x1.9ffe7428e4cdp-6},{0x1.5d1745d1745d1p+5, -0x1.24155602ab919p-6, 0x1.7318ac4e1371ep-6},{0x1.88ba2e8ba2e8bp+5, 0x1.3b7240dbda55ap-15, 0x1.8004ba6ea5cep-11},{0x1.b45d1745d1745p+5, 0x1.02b9ad4e4d7fep-18, 0x1.0e5808300682ep-12},{0x1.dffffffffffffp+5, 0x1.95ff25e10d10fp-28, 0x1.0ee3948570436p-12}};
     Compare(Values, Test);
 }
+
 TEST(LaserPulse, HandlesTrape)
 {
     SCOPED_TRACE("Trapezoidal test\n");

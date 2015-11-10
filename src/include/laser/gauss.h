@@ -26,39 +26,39 @@ namespace cathal
 {
 namespace laser
 {
-    class gauss : public pulse
+class gauss : public pulse
+{
+    private :
+    real A, B, C, D, Z0, Zd;
+    real E0, W0, CEP;
+    real GShift;
+    bool Chirp;
+    carrier Shape;
+    public :
+
+    gauss(unsigned int train, real tau, real shift, real cep, real w0, real e0, real FWHM, real d, real Length) : pulse(train, tau, shift), W0(w0), E0(e0)
     {
-        private :
-        real A, B, C, D, Z0, Zd;
-        real E0, W0, CEP;
-        real GShift;
-        bool Chirp;
-        carrier Shape;
-        public :
+        Z0 = FWHM / (2.0 * sqrt(2.0*log(2.0)));
+        Zd = pow(Z0, 4.0) + pow(d, 2.0);
+        A = E0 * Z0/pow(Zd, 1.0/4.0);
+        B = -pow(Z0, 2.0) / (2.0 * Zd);
+        CEP = cep;
 
-        gauss(unsigned int train, real tau, real shift, real cep, real w0, real e0, real FWHM, real d, real Length) : pulse(train, tau, shift), W0(w0), E0(e0)
-        {
-            Z0 = FWHM / (2.0 * sqrt(2.0*log(2.0)));
-            Zd = pow(Z0, 4.0) + pow(d, 2.0);
-            A = E0 * Z0/pow(Zd, 1.0/4.0);
-            B = -pow(Z0, 2.0) / (2.0 * Zd);
-            CEP = cep;
+        Chirp = (d != 0.0);
+        C = -d/(2.0*Zd);
+        D = 0.5 * atan(d / pow(Z0, 2.0));
+        Shape = cos;
 
-            Chirp = (d != 0.0);
-            C = -d/(2.0*Zd);
-            D = 0.5 * atan(d / pow(Z0, 2.0));
-            Shape = cos;
-
-            real TauChirp = 2.0 * sqrt(2.0 * log(2.0) * Zd / (Z0*Z0));
-            GShift = Length * TauChirp / 2.0;
-            Duration = Length * TauChirp + Shift + Tau*Train;
-        }
-        pulsetype PulseDef(real t)
-        {
-            t -= GShift;
-            return A  * exp(B * t*t) * Shape(W0*t - CEP*M_PI - (C*t*t + D));
-        }
-    };
+        real TauChirp = 2.0 * sqrt(2.0 * log(2.0) * Zd / (Z0*Z0));
+        GShift = Length * TauChirp / 2.0;
+        Duration = Length * TauChirp + Shift + Tau*Train;
+    }
+    pulsetype PulseDef(real t)
+    {
+        t -= GShift;
+        return A  * exp(B * t*t) * Shape(W0*t - CEP*M_PI - (C*t*t + D));
+    }
+};
 }
 }
 #endif

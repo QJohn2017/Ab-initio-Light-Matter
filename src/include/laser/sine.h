@@ -26,34 +26,34 @@ namespace cathal
 {
 namespace laser
 {
-    class sine : public pulse
+class sine : public pulse
+{
+    protected :
+    real Omega, E0, W0, CEP;
+    unsigned int Cycles;
+    carrier Shape;
+
+    private :
+
+    public :
+    sine(unsigned int train, real tau, real shift, real cep, real w0, real e0, unsigned int cycles, carrier shape) : pulse(train, tau, shift),
+                CEP(cep), W0(w0), E0(e0), Cycles(cycles), Shape(shape)
     {
-        protected :
-        real Omega, E0, W0, CEP;
-        unsigned int Cycles;
-        carrier Shape;
+        Omega = W0 / (real(2.0) * real(Cycles));
+        Duration = pi<real>() / Omega + Train*Tau + Shift;
+    }
 
-        private :
+    pulsetype PulseDef(real t)
+    {
+        real SineSqr;
+        if (t > pi<real>() / Omega || t < real(0.0))
+            return real(0.0);
 
-        public :
-        sine(unsigned int train, real tau, real shift, real cep, real w0, real e0, unsigned int cycles, carrier shape) : pulse(train, tau, shift),
-                 CEP(cep), W0(w0), E0(e0), Cycles(cycles), Shape(shape)
-        {
-            Omega = W0 / (real(2.0) * real(Cycles));
-            Duration = pi<real>() / Omega + Train*Tau + Shift;
-        }
-
-        pulsetype PulseDef(real t)
-        {
-            real SineSqr;
-            if (t > pi<real>() / Omega || t < real(0.0))
-                return real(0.0);
-
-            SineSqr = sin(Omega*t);
-            SineSqr *= SineSqr;
-            return E0 * SineSqr * Shape(W0*t- CEP*pi<real>());
-        }
-    };
+        SineSqr = sin(Omega*t);
+        SineSqr *= SineSqr;
+        return E0 * SineSqr * Shape(W0*t- CEP*pi<real>());
+    }
+};
 }
 }
 #endif

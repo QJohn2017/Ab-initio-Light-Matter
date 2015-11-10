@@ -26,49 +26,48 @@ namespace cathal
 {
 namespace laser
 {
-    class trape : public pulse
+class trape : public pulse
+{
+    protected :
+    real Omega, E0, W0, CEP, Main, Ramp, TShift;
+    carrier Shape;
+
+    private :
+
+    public :
+    trape(unsigned int train, real tau, real shift, real cep, real w0, real e0, real ramp, real main, carrier shape) : pulse(train, tau, shift),
+                CEP(cep), W0(w0), E0(e0), Shape(shape)
     {
-        protected :
-        real Omega, E0, W0, CEP, Main, Ramp, TShift;
-        carrier Shape;
+        Ramp = ramp * 2.0 * pi<real>() / W0;
+        Main = main * pi<real>() / W0;
+        TShift = Ramp+Main;
+        Duration = 2.0*(Ramp + Main) + Train*Tau + Shift;
+    }
 
-        private :
+};
 
-        public :
-        trape(unsigned int train, real tau, real shift, real cep, real w0, real e0, real ramp, real main, carrier shape) : pulse(train, tau, shift),
-                 CEP(cep), W0(w0), E0(e0), Shape(shape)
-        {
-            Ramp = ramp * 2.0 * pi<real>() / W0;
-            Main = main * pi<real>() / W0;
-            TShift = Ramp+Main;
-            Duration = 2.0*(Ramp + Main) + Train*Tau + Shift;
-        }
-
-    };
-
-    class ltrape : public trape
+class ltrape : public trape
+{
+    public :
+    using trape::trape;
+    pulsetype PulseDef(real t)
     {
-        public :
-        using trape::trape;
-        pulsetype PulseDef(real t)
-        {
-            t -= TShift;
-            return E0 * (fabs(t) <= Main ? 1.0 : (fabs(t) <= Ramp+Main ? 1.0-(fabs(t)-Main)/Ramp : 0.0)) 
-                    * Shape(W0*t - CEP*pi<real>());
-        }
-    };
-    class ctrape : public trape
+        t -= TShift;
+        return E0 * (fabs(t) <= Main ? 1.0 : (fabs(t) <= Ramp+Main ? 1.0-(fabs(t)-Main)/Ramp : 0.0)) 
+                * Shape(W0*t - CEP*pi<real>());
+    }
+};
+class ctrape : public trape
+{
+    public :
+    using trape::trape;
+    pulsetype PulseDef(real t)
     {
-        public :
-        using trape::trape;
-        pulsetype PulseDef(real t)
-        {
-            t -= TShift;
-            return E0 * (fabs(t) <= Main ? 1.0 : (fabs(t) <= Ramp+Main ? 0.5*(1.0-cos(M_PI*(fabs(t)-Main-Ramp)/Ramp)) : 0.0)) 
-                    * Shape(W0*t - CEP*pi<real>());
-        }
-    };
-
+        t -= TShift;
+        return E0 * (fabs(t) <= Main ? 1.0 : (fabs(t) <= Ramp+Main ? 0.5*(1.0-cos(M_PI*(fabs(t)-Main-Ramp)/Ramp)) : 0.0)) 
+                * Shape(W0*t - CEP*pi<real>());
+    }
+};
 }
 }
 #endif
