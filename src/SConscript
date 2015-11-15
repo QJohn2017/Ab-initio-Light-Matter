@@ -22,7 +22,7 @@ Import('MODE')
 
 Program = 'ailm'
 Compiler = 'g++'
-Path = 'include'
+Path = '../include'
 
 if MODE == 'release':
     CPPFlags = ' -std=c++14 -Wall -fdiagnostics-color=always'

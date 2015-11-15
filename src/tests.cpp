@@ -44,7 +44,9 @@ using namespace cathal;
 using std::cout;
 using std::endl;
 
-void PrintLoop(laser::field & Laser)
+//TODO: Add death tests
+
+void PrintLoop(rfield & Laser)
 {
     int NumSteps = 10;
     sequences::sequence * seq = new sequences::linear(Laser.End, NumSteps);
@@ -72,7 +74,7 @@ void PrintLoop(laser::field & Laser)
     cout << std::defaultfloat;
 }
 
-std::vector<std::array<real, 3>> Loop(laser::field & Laser)
+std::vector<std::array<real, 3>> Loop(rfield & Laser)
 {
     std::vector<std::array<real, 3>> Values;
     int NumSteps = 10;
@@ -94,15 +96,20 @@ std::vector<std::array<real, 3>> Loop(laser::field & Laser)
 }
 void Compare(std::vector<std::array<real, 3>> x, std::vector<std::array<real, 3>> y)
 {
-    EXPECT_EQ(x.size(), y.size());   
-    for (int i = 0; i < x.size(); i++)
+    EXPECT_EQ(x.size(), y.size()) << "Number of time steps do not match\n";   
+    for (size_t i = 0; i < x.size(); i++)
     {
-        EXPECT_EQ(x[i][0], y[i][0]);
-        EXPECT_EQ(x[i][1], y[i][1]);
-        EXPECT_EQ(x[i][2], y[i][2]);
+        ASSERT_DOUBLE_EQ(x[i][0], y[i][0]) << "Time Differs: " << i << std::endl;
+        ASSERT_DOUBLE_EQ(x[i][1], y[i][1]) << "E(t) Differs: " << i << std::endl;
+        ASSERT_DOUBLE_EQ(x[i][2], y[i][2]) << "A(t) Differs: " << i << std::endl;
     }
 }
-
+void Compare(std::vector<real> x, std::vector<real> y)
+{
+    EXPECT_EQ(x.size(), y.size());   
+    for (size_t i = 0; i < x.size(); i++)
+        ASSERT_DOUBLE_EQ(x[i], y[i])  << "Loop: " << i << std::endl;
+}
 TEST(LaserPulse, HandlesSine)
 {
     SCOPED_TRACE("Sine test\n");
@@ -115,7 +122,7 @@ TEST(LaserPulse, HandlesSine)
     laser::carrier shape = sin;
 
     unsigned int GaussN = 9;
-    laser::field Laser(GaussN);
+    rfield Laser(GaussN);
 
     Laser.AddPulse(new laser::sine(train, 0.0, 0.0, cep, w0, e0, cycles, shape));
 //     PrintLoop(Laser);
@@ -134,13 +141,11 @@ TEST(LaserPulse, HandlesGauss)
     real tau = 0.0;
     real shift = 10.0;
     unsigned int train = 1;
-    unsigned int cycles = 10;
     laser::carrier shape = sin;
     unsigned int GaussN = 9;
 
-    laser::field Laser(GaussN);
-
-    Laser.AddPulse(new laser::gauss(train, tau, shift, cep, w0, e0, 10.0, 0.0, 5.0));
+    rfield Laser(GaussN);
+    Laser.AddPulse(new laser::gauss(train, tau, shift, e0, w0, cep, 10.0, 0.0, 5.0));
 //      PrintLoop(Laser);
     std::vector<std::array<real, 3>> Values = Loop(Laser);
 
@@ -160,14 +165,56 @@ TEST(LaserPulse, HandlesTrape)
     laser::carrier shape = sin;
     unsigned int GaussN = 9;
 
-    laser::field Laser(GaussN);
+    rfield Laser(GaussN);
 
-    Laser.AddPulse(new laser::ctrape(1, 0.0, 2.0*shift, cep, w0, e0, 2.0, 10.0, shape));
+    Laser.AddPulse(new laser::ctrape(train, tau, 2.0*shift, e0, w0, cep, 2.0, 10.0, shape));
 //      PrintLoop(Laser);
     std::vector<std::array<real, 3>> Values = Loop(Laser);
 
     std::vector<std::array<real, 3>> Test {{0x0p+0, 0x0p+0, 0x0p+0},{0x1.3a142d88879c9p+3, 0x0p+0, 0x0p+0},{0x1.3a142d88879c9p+4, 0x0p+0, 0x0p+0},{0x1.d71e444ccb6aep+4, -0x1.c2e79a36b2739p-9, 0x1.598a7c84e6e6ap-3},{0x1.3a142d88879c9p+5, 0x1.46c377ddcdabdp-4, -0x1.92a05d90c1128p-3},{0x1.889938eaa983bp+5, -0x1.25f76ba8cafbfp-3, 0x1.023512a3f1166p-3},{0x1.d71e444ccb6aep+5, 0x1.7c5c8244b1613p-3, -0x1.66003a03aff64p-4},{0x1.12d1a7d776a9p+6, -0x1.99944c7104eb8p-3, -0x1.f2413614b0e18p-7},{0x1.3a142d88879c9p+6, 0x1.793a6855ee701p-3, 0x1.09261c8c052f1p-4},{0x1.6156b33998902p+6, -0x1.202bcabf2c337p-3, -0x1.3e1b0cde51f66p-3},{0x1.889938eaa983bp+6, 0x1.142a225dd0acdp-4, 0x1.3f12f85d7a258p-3},{0x1.afdbbe9bba774p+6, 0x0p+0, 0x1.a8b42f186f8p-13}};
      Compare(Values, Test);
+}
+
+//Hamiltonian post-overlap matrix calculation for the test case.
+util::banded<real> Ham({0, 0, 0x1.83e4e8f93a3e4p+2, -0x1.1104104104102p+0, -0x1.ad8b8362e0d8bp-1,
+0, -0x1.1104104104103p+0, 0x1.26b560d826b09p+2, -0x1.c73b23f5651bcp+0, -0x1.ac615d2ace7a9p-1,
+-0x1.ad8b8362e0d8bp-1, -0x1.c73b23f5651bcp+0, 0x1.3195d5378b443p+2, -0x1.bd6451be65d02p+0, -0x1.abe3633c8ca4ap-1,
+-0x1.ac615d2ace7a9p-1, -0x1.bd6451be65dp+0, 0x1.35d339eff7f5bp+2, -0x1.b8a1b55377a8p+0, -0x1.ab9db1ca214dcp-1,
+-0x1.abe3633c8ca4ap-1, -0x1.b8a1b55377a8p+0, 0x1.381f85632e783p+2, -0x1.b5cf5e9643424p+0, -0x1.ab716cf0ec48ep-1,
+-0x1.ab9db1ca214dap-1, -0x1.b5cf5e9643424p+0, 0x1.3991fd4a6bcfap+2, -0x1.b3f0a1ea0b17ep+0, -0x1.ab52ceb6f3f2ap-1,
+-0x1.ab716cf0ec48ep-1, -0x1.b3f0a1ea0b17ep+0, 0x1.3a91119184b5ep+2, -0x1.b29bce180bf73p+0, -0x1.ab3c5dfbb87c8p-1,
+-0x1.ab52ceb6f3f29p-1, -0x1.b29bce180bf73p+0, 0x1.3b4b862783e31p+2, -0x1.b19cb4dc8adadp+0, -0x1.ab2b36933f18cp-1,
+-0x1.ab3c5dfbb87c8p-1, -0x1.b19cb4dc8adacp+0, 0x1.3bd9d02c84c06p+2, -0x1.b68f74bf26109p-1, 0,
+-0x1.ab2b36933f18cp-1, -0x1.b68f74bf26109p-1, 0x1.a85ee1ffcc784p+2, 0, 0}, 10, 5);
+/*
+//Internal values for the Small Hamiltonian
+std::vector<real> HSmall = {0x1.0426c96aab069p+0, 0x1.ded59bb2d5178p+0, 0x1p-51, -0x1.7p-49, 0x1.16cp-46, 
+0x1.ded59bb2d517bp+0, 0x1.55d0fc466a06dp+2, 0x1.9184bfa04e74ep+0, -0x1.cp-48, 0x1.2f9p-45, 
+0x0p+0, 0x1.9184bfa04e745p+0, 0x1.0c2e9d4f61f2fp+2, 0x1.fca8c90358575p-1, -0x1.d24p-48, 
+0x0p+0, 0x0p+0, 0x1.fca8c90358568p-1, 0x1.9ebfd12fa632p+2, 0x1.28638d909b166p+0, 
+0x0p+0, 0x0p+0, 0x0p+0, 0x1.28638d909b189p+0, 0x1.ea2b6ee3c0fcep+0};
+
+//Internal values for Q Dagger
+std::vector<real> QDag = {0x1.43d136248490fp-2, 0x1.43d136248490fp-2, 0x1.43d136248490fp-2, 0x1.43d136248490fp-2, 0x1.43d136248490fp-2, 0x1.43d136248490fp-2, 0x1.43d136248490fp-2, 0x1.43d136248490fp-2, 0x1.43d136248490fp-2, 0x1.43d136248490fp-2, 
+0x1.0fbbfac61672fp-1, -0x1.0107419ff28f8p-6, -0x1.f0941d57e1304p-3, -0x1.c4ec512b725b7p-3, -0x1.adc94797a50b3p-3, -0x1.9f58b15f3f51dp-3, -0x1.9573193949a4bp-3, -0x1.8e3c0c400880ap-3, 0x1.71e46a9daad3dp-4, 0x1.53a41530164a7p-1, 
+0x1.c225433b3398dp-8, -0x1.59dbbddb5928bp-2, -0x1.96a9ffb153486p-3, 0x1.3c676bd2640abp-2, 0x1.88911fe2eb707p-2, 0x1.613c0c90cd58cp-2, 0x1.5e1a6366fb9b2p-3, -0x1.d0d2b76cfc316p-2, -0x1.ca2d9a6cde297p-2, 0x1.c7cd610eab713p-3, 
+-0x1.2dc5d7bc76322p-2, -0x1.cffb69af0f358p-6, 0x1.2954196eb4af5p-10, 0x1.d60a82d12df5cp-3, -0x1.04df49758e38p-1, -0x1.0f4e4caa1638ep-2, 0x1.59c4e1985dddcp-1, -0x1.21802461169c9p-5, -0x1.443ee43aacb5dp-5, 0x1.10d1f64d50caep-2, 
+0x1.0269d9633fef1p-3, 0x1.c21bcf9e28034p-2, 0x1.cb6c3fbbc6ad9p-2, 0x1.8248a126305dbp-2, -0x1.f2f0ab70f7ffp-5, -0x1.428aa26ba2625p-2, -0x1.c74fa7c5e68e5p-3, -0x1.fc5340b545343p-2, -0x1.901ed6c7386b5p-3, -0x1.a0499570a38ep-4, 
+0x1.9239242ee51c2p-6, -0x1.57bd1e96bac59p-5, -0x1.14ca609f4623dp-2, 0x1.2ec9946cd0c03p-4, 0x1.1f48cf4797d4dp-3, -0x1.0db3bcba62a3fp-4, 0x1.79eea572eac44p-3, -0x1.05111bce60089p-1, 0x1.752fcc497ccf9p-1, -0x1.0e801f10e757ep-2};*/
+
+
+/*
+ * 
+ * 
+ */
+TEST(KrylovArnoldi, Matrix)
+{
+    SCOPED_TRACE("Krylov test\n");
+    numeric::arnoldi<real> Kry(Ham, 5);
+    std::vector<real> Values = Kry.Eigenvalues();
+    std::vector<real> Test = {0x1.da0fd16173623p-3, 0x1.9cec1088a4741p+0, 0x1.a322e7257174fp+1, 0x1.9ccce9d03f414p+2, 0x1.d7ea18c8e078ap+2};
+
+    Compare(Values, Test);
 }
 
 int main(int argc, char **argv)
