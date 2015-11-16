@@ -52,10 +52,10 @@ class gauss : public pulse<real, real>
         GShift = Length * TauChirp / 2.0;
         Duration = Length * TauChirp + Shift + Tau*Train;
     }
-    pulsetype PulseDef(real t)
+    real PulseDef(real t)
     {
         t -= GShift;
-        return A  * exp(B * t*t) * Shape(W0*t - CEP*M_PI - (C*t*t + D));
+        return A  * exp(B * t*t) * Shape(W0*t - CEP*pi<real>() - (C*t*t + D));
     }
 };
 }

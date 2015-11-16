@@ -25,8 +25,6 @@
 #include <iostream>
 #include <vector>
 #include <array>
-typedef double pulsetype;
-typedef double vecpot;
 
 #include "laser/sine.h"
 #include "laser/gauss.h"
@@ -226,7 +224,7 @@ TEST(BSpline, SymmOverlapMatrix)    //Shortcut for symmetric matrices
     std::vector<real> Knots(18);
     real dx = 0.1;
     int k = 7;
-    for (int i = 0; i < Knots.size(); i++)
+    for (size_t i = 0; i < Knots.size(); i++)
         Knots[i] = i*dx;
 
     size_t No = Knots.size() - k;
@@ -254,7 +252,7 @@ TEST(BSpline, OverlapMatrix)    //Shortcut for symmetric matrices
     std::vector<real> Knots(18);
     real dx = 0.1;
     int k = 7;
-    for (int i = 0; i < Knots.size(); i++)
+    for (size_t i = 0; i < Knots.size(); i++)
         Knots[i] = i*dx;
 
     size_t No = Knots.size() - k;

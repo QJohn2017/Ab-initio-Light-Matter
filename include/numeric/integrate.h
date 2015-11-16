@@ -35,7 +35,7 @@ namespace quadrature
 
         gauss(std::vector<std::pair<real, real>> Val) : Xi(Val.size()), Wi(Val.size())
         {
-            for (int i = 0; i < Val.size(); i++)
+            for (size_t i = 0; i < Val.size(); i++)
             {
                 Xi[i] = Val[i].first;
                 Wi[i] = Val[i].second;

@@ -50,7 +50,7 @@ class ltrape : public trape
 {
     public :
     using trape::trape;
-    pulsetype PulseDef(real t)
+    real PulseDef(real t)
     {
         t -= TShift;
         return E0 * (fabs(t) <= Main ? 1.0 : (fabs(t) <= Ramp+Main ? 1.0-(fabs(t)-Main)/Ramp : 0.0)) 
@@ -61,7 +61,7 @@ class ctrape : public trape
 {
     public :
     using trape::trape;
-    pulsetype PulseDef(real t)
+    real PulseDef(real t)
     {
         t -= TShift;
         return E0 * (fabs(t) <= Main ? 1.0 : (fabs(t) <= Ramp+Main ? 0.5*(1.0-cos(M_PI*(fabs(t)-Main-Ramp)/Ramp)) : 0.0)) 

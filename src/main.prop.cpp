@@ -1,6 +1,4 @@
 #include <iostream>
-typedef double pulsetype;
-typedef double vecpot;
 
 #include "laser/sine.h"
 #include "laser/gauss.h"

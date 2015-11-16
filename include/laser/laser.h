@@ -19,12 +19,8 @@
 #ifndef CATHAL_LASER_GUARD
 #define CATHAL_LASER_GUARD
 #include <functional>
-//Move to math library
-// #include <boost/math/constants/constants.hpp>
 #include "numeric/integrate.h"
 #include "numeric/type.h"
-
-// using boost::math::constants::pi;
 
 namespace cathal
 {
@@ -73,7 +69,7 @@ class field
     {
     }
 
-    pulsetype E(T t)
+    P E(T t)
     {
         T Val = T(0);
         for (auto p : Pulses)

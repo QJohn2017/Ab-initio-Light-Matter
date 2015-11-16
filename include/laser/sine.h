@@ -43,7 +43,7 @@ class sine : public pulse<real, real>
         Duration = pi<real>() / Omega + Train*Tau + Shift;
     }
 
-    pulsetype PulseDef(real t)
+    real PulseDef(real t)
     {
         real SineSqr;
         if (t > pi<real>() / Omega || t < real(0.0))
