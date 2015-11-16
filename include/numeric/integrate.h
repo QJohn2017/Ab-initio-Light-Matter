@@ -1,6 +1,6 @@
 /* Cathal O Broin - cathal.obroin4 at mail.dcu.ie - 2015
    This work is not developed in affiliation with any organisation.
-  
+
    This file is part of AILM.
 
    AILM is free software: you can redistribute it and/or modify
@@ -32,6 +32,16 @@ namespace quadrature
         size_t n;
         std::vector<real> Xi, Wi;
         public :
+
+        gauss(std::vector<std::pair<real, real>> Val) : Xi(Val.size()), Wi(Val.size())
+        {
+            for (int i = 0; i < Val.size(); i++)
+            {
+                Xi[i] = Val[i].first;
+                Wi[i] = Val[i].second;
+            }
+        }
+
         gauss(size_t N)
         {
             n = N;

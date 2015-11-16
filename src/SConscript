@@ -25,27 +25,27 @@ Compiler = 'g++'
 Path = '../include'
 
 if MODE == 'release':
-    CPPFlags = ' -std=c++14 -Wall -fdiagnostics-color=always'
+    CPPFlags = '-fopenmp -mtune=native -O3 -std=c++14 -Wall -fdiagnostics-color=always'
 elif MODE == 'debug':
     CPPFlags = '-g -std=c++14 -Wall -Wextra -fdiagnostics-color=always'
 else:
     print 'Flags not specified'
 
-Src = ['Integrators.cpp', 'main.cpp', 'Splines.cpp']
+Src = ['main.cpp', 'splines.cpp']
 Libs = ['netcdf_c++', 'boost_serialization', 'config++', '-lgsl', '-lgslcblas', '-lblas', '-llapack']
 
 ######################################################
 
 env = Environment(platform = 'posix', tool=[Compiler], CPPPATH = Path, LIBS=Libs)
-env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags)
+env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags, LINKFLAGS='-fopenmp')
 
 Program = 'prop'
 Src = ['main.prop.cpp']
-env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags)
+env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags, LINKFLAGS='-fopenmp')
 
 Libs = [Libs, 'gtest']
 env.Replace(LIBS=Libs)
 Program = 'unittests'
-Src = ['tests.cpp']
-env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags)
+Src = ['tests.cpp', 'splines.cpp']
+env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags, LINKFLAGS='-fopenmp')
 

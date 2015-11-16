@@ -29,11 +29,8 @@ namespace cathal
             real Duration;
             public :
             sequence(real end) : Duration(end) { }
+            virtual real Next() = 0;
 
-            virtual real Next()
-            {
-                return real(0.0);
-            }
             virtual bool End()
             {
                 return true;

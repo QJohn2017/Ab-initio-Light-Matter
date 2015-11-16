@@ -18,4 +18,4 @@
 # along with AILM.  If not, see <http://www.gnu.org/licenses/>.
 
 SConscript('src/SConscript', variant_dir='build', duplicate=0, exports={'MODE':'release'})
-SConscript('src/SConscript', variant_dir='debug', duplicate=0, exports={'MODE':'debug'})
+#SConscript('src/SConscript', variant_dir='debug', duplicate=0, exports={'MODE':'debug'})

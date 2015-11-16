@@ -7,6 +7,7 @@ typedef double vecpot;
 #include "laser/trape.h"
 #include "numeric/sequence.h"
 #include "numeric/type.h"
+#include "netcdf/get.h"
 
 using namespace cathal;
 using std::cout;
@@ -14,6 +15,34 @@ using std::endl;
 
 int main(void)
 {
+/*****************************************************************
+ * 
+ *          Load Data from NetCDF File.
+ * 
+ * **************************************************************/
+    std::string File = "Basis.nc";
+    std::string KName = "Knots";
+    std::string EName = "Energy";
+    std::string CName = "Coefficients";
+    std::string DVName = "DipoleVelocity";
+    std::string DLName = "DipoleMoment";
+
+    std::string SName = "SplineOrder";
+    std::string RName = "Radius";
+
+//     nc::Get(const std::string FileName, util::array<T> & Data, const std::string & Name)
+
+    std::vector<real> Knots;
+//     util::array<real> Energy, DipoleVelocity, DipoleMoment;
+    
+    nc::Get(File, Knots, KName);
+//     nc::Get(File, Energy, EName);
+//     nc::Get(File, Knots, CName);
+//     nc::Get(File, Knots, DVName);
+//     nc::Get(File, Knots, DLName);
+//     
+////////////////////////////////////////////////////////////////
+    
     real cep = 0.0;
     real w0 = 1.0;
     real e0 = 0.2;
