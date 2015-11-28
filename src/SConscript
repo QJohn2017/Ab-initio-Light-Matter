@@ -18,26 +18,34 @@
 # along with AILM.  If not, see <http://www.gnu.org/licenses/>.
 
 ####### Settings ####################################
+import os
 Import('MODE')
 
 Program = 'ailm'
-Compiler = 'g++'
 Path = '../include'
 
 if MODE == 'release':
     CPPFlags = '-fopenmp -mtune=native -O3 -std=c++14 -Wall -fdiagnostics-color=always'
 elif MODE == 'debug':
-    CPPFlags = '-g -std=c++14 -Wall -Wextra -fdiagnostics-color=always'
+    CPPFlags = '-g -std=c++14 -Wall -fdiagnostics-color=always'
 else:
     print 'Flags not specified'
 
 Src = ['main.cpp', 'splines.cpp']
-Libs = ['netcdf_c++', 'boost_serialization', 'config++', '-lgsl', '-lgslcblas', '-lblas', '-llapack']
+Libs = ['netcdf_c++4', 'boost_serialization', 'config++', '-lgsl', '-lgslcblas', '-lblas', '-llapack']
+#Libs = ['netcdf_c++', 'boost_serialization', 'config++', '-lgsl', '-lgslcblas', '-lblas', '-llapack']
 
 ######################################################
-
-env = Environment(platform = 'posix', tool=[Compiler], CPPPATH = Path, LIBS=Libs)
+#env = Environment(platform = 'posix', tool = 'default', CXX='clang++', CPPPATH = Path, LIBS=Libs)
+env = Environment(platform = 'posix', tool = 'default', CXX='g++', CPPPATH = Path, LIBS=Libs)
 env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags, LINKFLAGS='-fopenmp')
+
+###
+#For scan-build support
+###
+env["CC"] = os.getenv("CC") or env["CC"]
+env["CXX"] = os.getenv("CXX") or env["CXX"]
+###
 
 Program = 'prop'
 Src = ['main.prop.cpp']

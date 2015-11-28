@@ -33,7 +33,7 @@ namespace quadrature
         std::vector<real> Xi, Wi;
         public :
 
-        gauss(std::vector<std::pair<real, real>> Val) : Xi(Val.size()), Wi(Val.size())
+        gauss(std::vector<std::pair<real, real>> Val) : n(Val.size()), Xi(Val.size()), Wi(Val.size())
         {
             for (size_t i = 0; i < Val.size(); i++)
             {

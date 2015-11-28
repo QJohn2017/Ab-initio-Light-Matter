@@ -33,7 +33,6 @@ class gauss : public pulse<real, real>
     real A, B, C, D, Z0, Zd;
     real E0, W0, CEP;
     real GShift;
-    bool Chirp;
     carrier Shape;
     public :
 
@@ -44,7 +43,6 @@ class gauss : public pulse<real, real>
         A = E0 * Z0/pow(Zd, 1.0/4.0);
         B = -pow(Z0, 2.0) / (2.0 * Zd);
 
-        Chirp = (d != 0.0);
         C = -d/(2.0*Zd);
         D = 0.5 * atan(d / pow(Z0, 2.0));
 

@@ -1,6 +1,6 @@
 /* Cathal O Broin - cathal.obroin4 at mail.dcu.ie - 2015
    This work is not developed in affiliation with any organisation.
-  
+
    This file is part of AILM.
 
    AILM is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@
 #include <vector>
 #include <functional>
 #include "numeric/type.h"
-#include "util/array.h"
+#include "la/array.h"
 namespace cathal
 {
 namespace numeric
@@ -30,22 +30,16 @@ namespace numeric
 // typedef real (* QSOLFunc)(real, void *);
 typedef std::function<real(real)> QSOLFunc;
 
-// extern int NumPoints;
-// extern std::vector<real> Xi;
-// extern std::vector<real> Wi;
-// extern void InitQuad(int n);
-//extern real * Wi;
-
 extern real BSpline(size_t k, size_t i, real x, std::vector<real> & Knots);
 extern real DBSpline(size_t k, size_t i, real x, std::vector<real> & Knots);
 
 typedef std::function<real(size_t, size_t, real, std::vector<real> &)> spl;
 typedef std::function<real(int, int, real)> QuadFunc;
 
-void BSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, util::array<real> & SplineOverlap, QuadFunc Fun)
+void BSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, la::block<real> & SplineOverlap, QuadFunc Fun)
 {
     using namespace std::placeholders;
-    int Ns = SplineOverlap.dim(0);
+    int Ns = SplineOverlap.Row();
 #pragma omp parallel for shared(Fun, Gauss, SplineOverlap, Knots) firstprivate(Ns, k) default(none)
     for (int i = 0; i < Ns; i++)
         for (int j = std::max(0, i-k+1); j < std::min(Ns, i+k); j++)
@@ -61,16 +55,16 @@ void BSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k,
 //Same functionality as above except optimised for symmetric problems (when <i|O|j> == <j|O|i>)
 //Tested on k=3, 100,000 by 100,000 for speed, ~30% reduction in run time (openmp disabled)
 //Tested on k=9, 1,000 by 1,000 for speed, ~30% reduction in run time (openmp disabled)
-void SymmBSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, util::array<real> & SplineOverlap, QuadFunc Fun)
+void SymmBSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, la::block<real> & SplineOverlap, QuadFunc Fun)
 {
     using namespace std::placeholders;
-    int Ns = SplineOverlap.dim(0);
-    
+    int Ns = SplineOverlap.Row();
+
 #pragma omp parallel for shared(Fun, Gauss, SplineOverlap, Knots) firstprivate(Ns, k) default(none)
     for (int i = 0; i < Ns; i++)
     {
         int Min = std::max(i - k+1, 0);
-        
+
         real Sum = 0.0;
         for (int bps = Min; bps < Min+2*k-1; bps++)
             Sum += Gauss.Quad<real, real>(Knots[bps], Knots[bps+1], std::bind(Fun, i, i, _1));
@@ -86,11 +80,11 @@ void SymmBSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, in
     }
 }
 
-void SymmBSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, util::array<real> & SplineOverlap, QSOLFunc Fun, spl Spl1, spl Spl2)
+void SymmBSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, la::block<real> & SplineOverlap, QSOLFunc Fun, spl Spl1, spl Spl2)
 {
     SymmBSplineOverlap(Gauss, Knots, k, SplineOverlap, [&](int i, int j, real x) -> real { return Fun(x) * Spl1(k, i, x, Knots) * Spl2(k, j, x, Knots);});
 }
-void BSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, util::array<real> & SplineOverlap, QSOLFunc Fun, spl Spl1, spl Spl2)
+void BSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, la::block<real> & SplineOverlap, QSOLFunc Fun, spl Spl1, spl Spl2)
 {
     BSplineOverlap(Gauss, Knots, k, SplineOverlap, [&](int i, int j, real x) -> real { return Fun(x) * Spl1(k, i, x, Knots) * Spl2(k, j, x, Knots);});
 }
