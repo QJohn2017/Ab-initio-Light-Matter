@@ -25,18 +25,51 @@
 #include "la/array.h"
 namespace cathal
 {
-namespace numeric
+namespace spline
 {
 // typedef real (* QSOLFunc)(real, void *);
 typedef std::function<real(real)> QSOLFunc;
 
-extern real BSpline(size_t k, size_t i, real x, std::vector<real> & Knots);
-extern real DBSpline(size_t k, size_t i, real x, std::vector<real> & Knots);
+// extern real BSpline(size_t k, size_t i, real x, std::vector<real> & Knots);
+// extern real DBSpline(size_t k, size_t i, real x, std::vector<real> & Knots);
 
 typedef std::function<real(size_t, size_t, real, std::vector<real> &)> spl;
 typedef std::function<real(int, int, real)> QuadFunc;
 
-void BSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, la::block<real> & SplineOverlap, QuadFunc Fun)
+template <class T>
+T BSpline(size_t k, size_t i, real x, std::vector<T> & Knots)
+{
+    if (k == 1)
+        return real(x >= Knots[i] && x < Knots[i+1]);
+    if (i+k >= Knots.size())
+        return 0.0;
+
+    T A = Knots[i+k-1] - Knots[i];
+    T B = Knots[i+k] - Knots[i+1];
+
+    T BS1 = BSpline(k-1, i, x, Knots);
+    T BS2 = BSpline(k-1, i+1, x, Knots);
+
+    return  (A ? (x - Knots[i])/A * BS1 : 0.0) + (B ? (Knots[i+k] - x)/B * BS2 : 0.0);
+}
+
+template <class T>
+T DBSpline(size_t k, size_t i, real x, std::vector<T> & Knots)
+{
+    if (i+k >= Knots.size())
+        return 0.0;
+
+    T A = Knots[i+k-1] - Knots[i];
+    T B = Knots[i+k] - Knots[i+1];
+
+    T BS1 = BSpline(k-1, i, x, Knots);
+    T BS2 = BSpline(k-1, i+1, x, Knots);
+
+    return (real)(k-1)*((A ? BS1/A : 0.0) - (B ? BS2/B : 0.0));
+}
+
+template <class T, class P>
+void Overlap(quadrature::gauss<T, P> & Gauss, std::vector<P> & Knots, int k, la::block<T> & SplineOverlap, QuadFunc Fun)
 {
     using namespace std::placeholders;
     int Ns = SplineOverlap.Row();
@@ -47,7 +80,7 @@ void BSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k,
             real Sum = 0.0;
             int Min = std::max(std::min(i, j) - k+1, 0);
             for (int bps = Min; bps < Min+2*k-1; bps++)
-                Sum += Gauss.Quad<real, real>(Knots[bps], Knots[bps+1], std::bind(Fun, i, j, _1));
+                Sum += Gauss.Quad(Knots[bps], Knots[bps+1], std::bind(Fun, i, j, _1));
             SplineOverlap(i, j) = Sum;
         }
 }
@@ -55,7 +88,8 @@ void BSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k,
 //Same functionality as above except optimised for symmetric problems (when <i|O|j> == <j|O|i>)
 //Tested on k=3, 100,000 by 100,000 for speed, ~30% reduction in run time (openmp disabled)
 //Tested on k=9, 1,000 by 1,000 for speed, ~30% reduction in run time (openmp disabled)
-void SymmBSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, la::block<real> & SplineOverlap, QuadFunc Fun)
+template <class T, class P>
+void SymmOverlap(quadrature::gauss<T, P> & Gauss, std::vector<P> & Knots, int k, la::block<T> & SplineOverlap, QuadFunc Fun)
 {
     using namespace std::placeholders;
     int Ns = SplineOverlap.Row();
@@ -67,26 +101,50 @@ void SymmBSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, in
 
         real Sum = 0.0;
         for (int bps = Min; bps < Min+2*k-1; bps++)
-            Sum += Gauss.Quad<real, real>(Knots[bps], Knots[bps+1], std::bind(Fun, i, i, _1));
+            Sum += Gauss.Quad(Knots[bps], Knots[bps+1], std::bind(Fun, i, i, _1));
         SplineOverlap(i, i) = Sum;
 
         for (int j = i+1; j < std::min(Ns, i+k); j++)
         {
             real Sum = 0.0;
             for (int bps = Min; bps < Min+2*k-1; bps++)
-                Sum += Gauss.Quad<real, real>(Knots[bps], Knots[bps+1], std::bind(Fun, i, j, _1));
+                Sum += Gauss.Quad(Knots[bps], Knots[bps+1], std::bind(Fun, i, j, _1));
             SplineOverlap(i, j) = SplineOverlap(j, i) = Sum;
         }
     }
 }
+template <class T, class P>
+void AdaptiveOverlap(quadrature::gauss<T, P> & Gauss, std::vector<P> & Knots, int k, la::block<T> & SplineOverlap, QuadFunc Fun)
+{
+    using namespace std::placeholders;
+    int Ns = SplineOverlap.Row();
+    #pragma omp parallel for shared(std::cout, Fun, Gauss, SplineOverlap, Knots) firstprivate(Ns, k) default(none)
+    for (int i = 0; i < Ns; i++)
+    {
+        for (int j = std::max(0, i-k+1); j < std::min(Ns, i+k); j++)
+        {
+            int Start = std::max(std::min(i, j) - k+1, 0);
+            int End = Start + 2*k-1;
+            real Sum = 0.0;
 
-void SymmBSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, la::block<real> & SplineOverlap, QSOLFunc Fun, spl Spl1, spl Spl2)
-{
-    SymmBSplineOverlap(Gauss, Knots, k, SplineOverlap, [&](int i, int j, real x) -> real { return Fun(x) * Spl1(k, i, x, Knots) * Spl2(k, j, x, Knots);});
+            SplineOverlap(i, j) = Gauss.Adaptive(1e-16, Knots[Start], Knots[End], std::bind(Fun, i, j, _1));
+        }
+    }
 }
-void BSplineOverlap(quadrature::gauss & Gauss, std::vector<real> & Knots, int k, la::block<real> & SplineOverlap, QSOLFunc Fun, spl Spl1, spl Spl2)
+template <class T, class P>
+void AdaptiveOverlap(quadrature::gauss<T, P> & Gauss, std::vector<P> & Knots, int k, la::block<T> & SplineOverlap, QSOLFunc Fun, spl Spl1, spl Spl2)
 {
-    BSplineOverlap(Gauss, Knots, k, SplineOverlap, [&](int i, int j, real x) -> real { return Fun(x) * Spl1(k, i, x, Knots) * Spl2(k, j, x, Knots);});
+    AdaptiveOverlap(Gauss, Knots, k, SplineOverlap, [&](int i, int j, real x) -> real { return Fun(x) * Spl1(k, i, x, Knots) * Spl2(k, j, x, Knots);});
+}
+template <class T, class P>
+void SymmOverlap(quadrature::gauss<T, P> & Gauss, std::vector<P> & Knots, int k, la::block<T> & SplineOverlap, QSOLFunc Fun, spl Spl1, spl Spl2)
+{
+    SymmOverlap(Gauss, Knots, k, SplineOverlap, [&](int i, int j, real x) -> real { return Fun(x) * Spl1(k, i, x, Knots) * Spl2(k, j, x, Knots);});
+}
+template <class T, class P>
+void Overlap(quadrature::gauss<T, P> & Gauss, std::vector<P> & Knots, int k, la::block<T> & SplineOverlap, QSOLFunc Fun, spl Spl1, spl Spl2)
+{
+    Overlap(Gauss, Knots, k, SplineOverlap, [&](int i, int j, real x) -> real { return Fun(x) * Spl1(k, i, x, Knots) * Spl2(k, j, x, Knots);});
 }
 
 /* BASIS NAIVE IMPLEMENTATION */ /*

@@ -25,17 +25,22 @@
 #include <vector>
 #include <array>
 
+//This is to prevent type.h changing the type.
+#define CATHAL_TYPE_GUARD
+typedef double real;
+
 #include "laser/sine.h"
 #include "laser/gauss.h"
 #include "laser/trape.h"
 #include "la/array.h"
+#include "la/vec.h"
 #include "la/slice.h"
 #include "la/krylov.h"
 #include "util/io.h"
 #include "numeric/sequence.h"
-#include "numeric/type.h"
 #include "numeric/splines.h"
 #include <gtest/gtest.h>
+
 
 using namespace cathal;
 using std::cout;
@@ -229,12 +234,12 @@ TEST(BSpline, SymmOverlapMatrix)    //Shortcut for symmetric matrices
     size_t No = Knots.size() - k;
 //     size_t Nw = 2*k-1;
 
-    quadrature::gauss Gauss(GaussQuadVal);
+    quadrature::gauss<real, real> Gauss(GaussQuadVal);
 
     la::band<real> DivX2(No, k), H(No, k);
 //     la::band<real> DivX2(No, Nw), H(No, Nw);
-    numeric::SymmBSplineOverlap(Gauss, Knots, k, DivX2, [](real x) {return (x ? 1.0 / (x*x) : 0.0);}, numeric::BSpline,  numeric::BSpline);
-    numeric::SymmBSplineOverlap(Gauss, Knots, k, H, [&Knots, k](int i, int j, real x) { return numeric::DBSpline(k, i, x, Knots) * numeric::DBSpline(k, j, x, Knots);});
+    spline::SymmOverlap(Gauss, Knots, k, DivX2, [](real x) {return (x ? 1.0 / (x*x) : 0.0);}, spline::BSpline<real>,  spline::BSpline<real>);
+    spline::SymmOverlap(Gauss, Knots, k, H, [&Knots, k](int i, int j, real x) { return spline::DBSpline(k, i, x, Knots) * spline::DBSpline(k, j, x, Knots);});
 
     SCOPED_TRACE("Compare DivX2\n");
     Compare(DivX2, DivX2Compare);
@@ -253,11 +258,11 @@ TEST(BSpline, OverlapMatrix)    //Shortcut for symmetric matrices
     size_t No = Knots.size() - k;
 //     size_t Nw = 2*k-1;
 
-    quadrature::gauss Gauss(GaussQuadVal);
+    quadrature::gauss<real, real> Gauss(GaussQuadVal);
 
     la::band<real> DivX2(No, k), H(No, k);
-    numeric::BSplineOverlap(Gauss, Knots, k, DivX2, [](real x) {return (x ? 1.0 / (x*x) : 0.0);}, numeric::BSpline,  numeric::BSpline);
-    numeric::BSplineOverlap(Gauss, Knots, k, H, [&Knots, k](int i, int j, real x) { return numeric::DBSpline(k, i, x, Knots) * numeric::DBSpline(k, j, x, Knots);});
+    spline::Overlap(Gauss, Knots, k, DivX2, [](real x) {return (x ? 1.0 / (x*x) : 0.0);}, spline::BSpline<real>,  spline::BSpline<real>);
+    spline::Overlap(Gauss, Knots, k, H, [&Knots, k](int i, int j, real x) { return spline::DBSpline(k, i, x, Knots) * spline::DBSpline(k, j, x, Knots);});
 
     SCOPED_TRACE("Compare DivX2\n");
     Compare(DivX2, DivX2Compare);
@@ -267,14 +272,59 @@ TEST(BSpline, OverlapMatrix)    //Shortcut for symmetric matrices
 #include <cmath>
 TEST(Quadrature, Gaussian)
 {
-    quadrature::gauss Gauss(9);
-    real Test = Gauss.Quad<real, real>(real(0), real(1), [](real x) -> real { return std::sin(x); }); //I'm sure there is a better way of picking the correct overload.
-    quadrature::gauss CompGauss(GaussQuadVal);
-    real Test2 = CompGauss.Quad<real, real>(real(0), real(1), [](real x) -> real { return std::sin(x); } );
+    quadrature::gauss<real, real> Gauss(9);
+    real Test = Gauss.Quad(real(0), real(1), [](real x) -> real { return std::sin(x); }); //I'm sure there is a better way of picking the correct overload.
+    quadrature::gauss<real, real> CompGauss(GaussQuadVal);
+    real Test2 = CompGauss.Quad(real(0), real(1), [](real x) -> real { return std::sin(x); } );
 
     ASSERT_DOUBLE_EQ(Test, Test2) << "Gauss quad Differs: " << std::endl;
+
+    real Test3 = 0x1.d6bafe095f2eap-2;
+    ASSERT_DOUBLE_EQ(Test, Test3) << "Gauss quad final result Differs: " << std::endl;
 }
 
+/* **********************************************************************
+ * 
+ *                          Basic Linear Algebra Tests
+ * 
+ * **********************************************************************/
+std::vector<real> RefVec = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0};
+real RefDot = 4900;
+//This test will see if the basic aspects of the la::slice type are working correctly.
+TEST(LinearAlgebra, Slice)
+{
+    SCOPED_TRACE("Slice test\n");
+    la::slice<real> A(RefVec);
+    for (size_t i = 0; i < A.Size(); i++)
+        ASSERT_DOUBLE_EQ(A[i], RefVec[i]) << "Slice initialisation-access failed.\n";
+    la::slice<real> B(A);
+    for (size_t i = 0; i < B.Size(); i++)
+        ASSERT_DOUBLE_EQ(B[i], RefVec[i]) << "Slice copy constructor failed.\n";
+
+    real Dot1 = Dot(A, A);
+    real Dot2 = Dot(A, B);
+    ASSERT_DOUBLE_EQ(Dot1, RefDot) << "Dot product failed.\n";
+    ASSERT_DOUBLE_EQ(Dot2, RefDot) << "Dot product failed.\n";
+}
+
+//This test will see if the basic aspects of the la::vec type are working correctly.
+TEST(LinearAlgebra, Vector)
+{
+    SCOPED_TRACE("Vector test\n");
+    la::vec<real> A(RefVec.size());
+    for (size_t i = 0; i < A.Size(); i++)
+        A(i) = RefVec[i];
+    la::vec<real> B(A);
+    real Dot1 = Dot(A, A);
+    real Dot2 = Dot(A, B);
+
+    for (size_t i = 0; i < A.Size(); i++)
+        ASSERT_DOUBLE_EQ(A(i), RefVec[i]) << "Slice initialisation-access failed.\n";
+    for (size_t i = 0; i < B.Size(); i++)
+        ASSERT_DOUBLE_EQ(B(i), RefVec[i]) << "Slice copy constructor failed.\n";
+    ASSERT_DOUBLE_EQ(Dot1, RefDot) << "Dot product failed.\n";
+    ASSERT_DOUBLE_EQ(Dot2, RefDot) << "Dot product failed.\n";
+}
 /*
  *
  * Krylov subspace test (Arnoldi method with a symmetric matrix)

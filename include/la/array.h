@@ -194,7 +194,7 @@ band<T> Convert(fullblock<T> & B, int k)
 {
     band<T> A(B.Row(), k);
     for (size_t i = 0; i < A.Row(); i++)
-        for (int j = std::max(0, int(i)-k+1); j < std::min(A.Row(), i+k); j++)
+        for (int j = std::max(0, int(i)-k+1); j < std::min(int(A.Row()), int(i)+k); j++)
             A(i, j) = B(i, j);
     return A;
 }
@@ -279,9 +279,9 @@ la::band<T> Shrink(la::band<T> Full, size_t Start, size_t End)
     int k = Full.Order();
     size_t Sz = Full.Row();
     la::band<T> Shrunk(Sz-Start-End, k);
-    for (int i = Start; i < int(Full.Row()-End); i++)
-        for (int j = std::max(0, i-k+1); j < std::min(int(Sz), i+k); j++)
-            Shrunk(i-Start, j) = Full(i, j);
+    for (int i = Start; i < int(Sz-End); i++)
+        for (int j = std::max(int(Start), i-k+1); j < std::min(int(Sz-End), i+k); j++)
+            Shrunk(i-Start, j-Start) = Full(i, j);
     return Shrunk;
 }
 }

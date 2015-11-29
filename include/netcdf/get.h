@@ -18,7 +18,7 @@
 */
 /*
 * SPECIAL NOTE:
-* Requires netcdf-cxx package (archlinux) or equivalent. Uses the NetCDF API by Appel.
+* Requires netcdf-cxx package (archlinux) or equivalent. Uses the (Appel) NetCDF API.
 */
 #ifndef NETCDF_GET_GUARD
 #define NETCDF_GET_GUARD

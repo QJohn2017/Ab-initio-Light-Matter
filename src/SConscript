@@ -31,7 +31,7 @@ elif MODE == 'debug':
 else:
     print 'Flags not specified'
 
-Src = ['main.cpp', 'splines.cpp']
+Src = ['main.cpp']#, 'splines.cpp']
 Libs = ['netcdf_c++4', 'boost_serialization', 'config++', '-lgsl', '-lgslcblas', '-lblas', '-llapack']
 #Libs = ['netcdf_c++', 'boost_serialization', 'config++', '-lgsl', '-lgslcblas', '-lblas', '-llapack']
 
@@ -54,6 +54,6 @@ env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags, LINKFLAGS='-fopenmp')
 Libs = [Libs, 'gtest']
 env.Replace(LIBS=Libs)
 Program = 'unittests'
-Src = ['tests.cpp', 'splines.cpp']
+Src = ['tests.cpp']#, 'splines.cpp']
 env.Program(target=Program, source=Src, CPPFLAGS=CPPFlags, LINKFLAGS='-fopenmp')
 

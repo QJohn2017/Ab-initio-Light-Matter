@@ -39,7 +39,7 @@ void DebugPrint(std::string File, int Line)
     std::cout << "Debug " << PrintL++ << " File " << File << " Line " << Line << std::endl;
 }
 }
-#define DEBUG
+// #define DEBUG
 #ifdef DEBUG
 #define  DP()  io::DebugPrint(__FILE__, __LINE__)
 #else

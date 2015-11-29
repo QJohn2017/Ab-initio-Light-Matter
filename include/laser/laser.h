@@ -39,12 +39,12 @@ class pulse
     private :
     virtual P PulseDef(T t) = 0;
     public :
+    pulse(unsigned int train, T tau, T shift) : Train(train), Tau(tau), Shift(shift) { }
     T End()
     {
         return Duration;
     }
 
-    pulse(unsigned int train, T tau, T shift) : Train(train), Tau(tau), Shift(shift) { }
     P E(T t)
     {
         P EVal = T(0);
@@ -60,7 +60,7 @@ class field
     std::vector<pulse<T, P> *> Pulses;
     P Vec = P(0);
     T Time;
-    quadrature::gauss Gauss; //Gaussian quadrature
+    quadrature::gauss<P, T> Gauss; //Gaussian quadrature
 
     public :
     T End = T(0);
@@ -79,7 +79,7 @@ class field
 
     P A(T t0, T t1)
     {
-        Vec += Gauss.Quad<P, T>(t0, t1, [=] (T t) -> P {  return E(t); });
+        Vec += Gauss.Quad(t0, t1, [=] (T t) -> P {  return E(t); });
         return Vec;
     }
 

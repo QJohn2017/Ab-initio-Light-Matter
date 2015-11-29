@@ -73,7 +73,7 @@ class arnoldi
         {
             vec<T> & P = QDag[i];
             vec<T> & C = QDag[i+1];
-            C = slice<T>(H * P);
+            C = slice<T>(H * P); //TODO: Make this cast not required.
             for (int j = 0; j < i+1; j++)
             {
                 vec<T> & jth = QDag[j];
