@@ -40,9 +40,11 @@ class sine : public pulse<real, real>
     sine(unsigned int Train, real Tau, real Shift, real E0, real W0, real CEP, unsigned int Cycles, carrier Shape = cos) : pulse<real, real>(Train, Tau, Shift), E0(E0), W0(W0), CEP(CEP), Cycles(Cycles), Shape(Shape)
     {
         Omega = W0 / (real(2.0) * real(Cycles));
-        Duration = pi<real>() / Omega + Train*Tau + Shift;
     }
-
+    real End(void)
+    {
+        return pi<real>() / Omega + Train*Tau + Shift;
+    }
     real PulseDef(real t)
     {
         real SineSqr;

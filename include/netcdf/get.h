@@ -33,7 +33,6 @@ namespace cathal
 {
 namespace nc
 {
-
 template <class T>
 std::vector<T> GetVector(const std::string & FileName, const std::string & Name)
 {
@@ -44,8 +43,34 @@ std::vector<T> GetVector(const std::string & FileName, const std::string & Name)
 
     assert(Dim.size() == 1);
     std::vector<T> Data(Dim[0].getSize());
-//     Data.resize(Dim[0].getSize());
     Var.getVar(&Data[0]);
+    return Data;
+}
+
+template <class T>
+la::vec<T> GetVec(const std::string & FileName, const std::string & Name)
+{
+    netCDF::NcFile File(FileName, netCDF::NcFile::read);
+
+    netCDF::NcVar Var = File.getVar(Name);
+    std::vector<netCDF::NcDim> Dim = Var.getDims();
+
+    std::vector<size_t> Indx(Dim.size());
+    for (int i = 0; i < Dim.size(); i++)
+        Indx[i] = Dim[i].getSize();
+    la::vec<T> Data(Indx);
+    Var.getVar(&(Data[0][0]));
+/*    //TODO: Implement this when considered about partial reads
+    switch (Dim.size())
+    {
+        case 1 :
+            Var.getVar(&Data[0]);
+        break;
+        case 2 :
+        break;
+        default :
+            throw(DIM_MISMATCH);
+    }*/
     return Data;
 }
 
@@ -64,6 +89,87 @@ la::fullblock<T> GetBlock(const std::string & FileName, const std::string & Name
     Var.getVar(&Data(0));
     return Data;
 }
+
+/////////////////////////This is what I am currently working on/////////////////////////////////////
+
+template <class T>
+la::vec<T> ReadVec(const std::string & FileName, const std::string & Name, size_t Start, size_t End)
+{
+    netCDF::NcFile File(FileName, netCDF::NcFile::read);
+
+    netCDF::NcVar Var = File.getVar(Name);
+    std::vector<netCDF::NcDim> Dim = Var.getDims();
+
+    std::vector<size_t> Indx(Dim.size());
+    for (int i = 0; i < Dim.size(); i++)
+        Indx[i] = Dim[i].getSize();
+    la::vec<T> Data(Indx);
+    
+    for (int i = 0; i < Dim[i].getSize(); i++)
+    {
+// #error Continue here.
+        Var.getVar(&(Data[0][0]));
+    }
+/*    //TODO: Implement this when considered about partial reads
+    switch (Dim.size())
+    {
+        case 1 :
+            Var.getVar(&Data[0]);
+        break;
+        case 2 :
+        break;
+        default :
+            throw(DIM_MISMATCH);
+    }*/
+    return Data;
+}
+
+template <class T>
+std::vector<T> ReadVector(const std::string & FileName, const std::string & Name, size_t Start, size_t End)
+{
+    netCDF::NcFile File(FileName, netCDF::NcFile::read);
+
+    netCDF::NcVar Var = File.getVar(Name);
+    std::vector<netCDF::NcDim> Dim = Var.getDims();
+
+    assert(Dim.size() == 1);
+    std::vector<T> Data(Dim[0].getSize());
+    Var.getVar(&Data[0]);
+    return Data;
+}
+
+template <class T>
+la::fullblock<T> ReadBlock(const std::string & FileName, const std::string & Name, size_t Start, size_t End)
+{
+    netCDF::NcFile File(FileName, netCDF::NcFile::read);
+
+    netCDF::NcVar Var = File.getVar(Name);
+    std::vector<netCDF::NcDim> Dim = Var.getDims();
+
+    assert(Dim.size() == 2);
+    la::fullblock<T> Data(Dim[0].getSize(), Dim[1].getSize());
+//     Data.resize(Dim[0].getSize(), Dim[1].getSize());
+
+    Var.getVar(&Data(0));
+    return Data;
+}
+
+template <class T>
+la::diag<T> ReadDiag(const std::string & FileName, const std::string & Name, size_t Start, size_t End)
+{
+    netCDF::NcFile File(FileName, netCDF::NcFile::read);
+
+    netCDF::NcVar Var = File.getVar(Name);
+    std::vector<netCDF::NcDim> Dim = Var.getDims();
+
+    assert(Dim.size() == 2);
+    la::diag<T> Data(Dim[0].getSize());
+//     Data.resize(Dim[0].getSize(), Dim[1].getSize());
+
+    Var.getVar(&Data(0));
+    return Data;
+}
+
 }
 }
 #endif

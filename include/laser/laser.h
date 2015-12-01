@@ -34,17 +34,13 @@ class pulse
 {
     protected :
     unsigned int Train;
-    T Tau, Shift, Duration;
+    T Tau, Shift;
 
     private :
     virtual P PulseDef(T t) = 0;
     public :
     pulse(unsigned int train, T tau, T shift) : Train(train), Tau(tau), Shift(shift) { }
-    T End()
-    {
-        return Duration;
-    }
-
+    virtual T End(void) = 0;
     P E(T t)
     {
         P EVal = T(0);

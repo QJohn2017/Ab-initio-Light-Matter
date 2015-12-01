@@ -57,21 +57,6 @@ namespace cathal
 }
 
 template <class T>
-la::band<T> Hydrogen(quadrature::gauss<T, T> & Gauss, int l, size_t k, std::vector<T> & Knots)
-{
-    size_t No = Knots.size() - k;
-    la::band<T> DivX2(No, k), DivX(No, k), H(No, k), Prod(No, k);
-
-    spline::SymmOverlap(Gauss, Knots, k, DivX2, [](real x) {return (x ? 1.0 / (x*x) : 0.0);}, spline::BSpline<real>, spline::BSpline<real>);
-    spline::SymmOverlap(Gauss, Knots, k, DivX, [](real x) {return (x ? 1.0 / x : 0.0);}, spline::BSpline<real>, spline::BSpline<real>);
-    spline::SymmOverlap(Gauss, Knots, k, H, [&Knots, k](int i, int j, real x) { return spline::DBSpline(k, i, x, Knots) * spline::DBSpline(k, j, x, Knots);});
-
-    for (size_t i = 0; i < Prod.NumElem(); i++)
-        Prod(i) = 0.5 * H(i) + 0.5*l*(l+1)*DivX2(i) - DivX(i);
-    return Prod;
-}
-
-template <class T>
 void MatTest(la::band<T> H, la::band<T> SMat)
 {
     ioln("H Eigen");
@@ -92,6 +77,75 @@ void MatTest(la::band<T> H, la::band<T> SMat)
     SymBandEigen(SMat);
 }
 
+namespace cathal
+{
+namespace quant
+{
+namespace abinitio
+{
+template <class T>
+la::band<T> HOverlapMatrix(quadrature::gauss<T, T> & Gauss, int l, size_t k, std::vector<T> & Knots, size_t IgnoreStart = 1, size_t IgnoreEnd = 1)
+{
+    size_t No = Knots.size() - k;
+    la::band<T> DivX2(No, k), DivX(No, k), H(No, k), Prod(No, k);
+
+    spline::SymmOverlap(Gauss, Knots, k, DivX2, [](real x) {return (x ? 1.0 / (x*x) : 0.0);}, spline::BSpline<real>, spline::BSpline<real>);
+    spline::SymmOverlap(Gauss, Knots, k, DivX, [](real x) {return (x ? 1.0 / x : 0.0);}, spline::BSpline<real>, spline::BSpline<real>);
+    spline::SymmOverlap(Gauss, Knots, k, H, [&Knots, k](int i, int j, real x) { return spline::DBSpline(k, i, x, Knots) * spline::DBSpline(k, j, x, Knots);});
+
+    for (size_t i = 0; i < Prod.NumElem(); i++)
+        Prod(i) = 0.5 * H(i) + 0.5*l*(l+1)*DivX2(i) - DivX(i);
+
+    if (IgnoreStart || IgnoreEnd)
+    { 
+        la::band<real> Final = Shrink(Prod, IgnoreStart, IgnoreEnd);
+        return Final;
+    }
+    else return Prod;
+}
+template <class T>
+la::band<T> OverlapMatrix(quadrature::gauss<T, T> & Gauss, size_t k, std::vector<T> & Knots, size_t IgnoreStart = 1, size_t IgnoreEnd = 1)
+{
+    la::band<real> S(Knots.size() - k, k);
+    spline::SymmOverlap(Gauss, Knots, k, S, [](real x){return 1.0;}, spline::BSpline<real>, spline::BSpline<real>);
+    if (IgnoreStart || IgnoreEnd)
+    {
+        la::band<real> Final = Shrink(S, IgnoreStart, IgnoreEnd);
+        return Final;
+    }
+    else return S;
+}
+// std::pair<vec<real>, la:sqrarray<real> >
+void Hydrogen(std::vector<real> Knots, int k, int l, size_t NumKrylov, size_t IgnoreStart = 1, size_t IgnoreEnd = 1)
+{
+    size_t GaussOrder = k;
+    quadrature::gauss<real, real> Gauss(GaussOrder);
+
+    la::band<real> H = HOverlapMatrix(Gauss, l, k, Knots, IgnoreStart, IgnoreEnd);
+    std::cout << "Hydrogen built\n";
+    std::cout << "H.dim = ("<< H.Row() << ", " << H.Column() << ");\n";
+
+    la::band<real> S = OverlapMatrix(Gauss, k, Knots, IgnoreStart, IgnoreEnd);
+
+    la::sqrarray<real> sqrH(1);
+    sqrH.AddBlock(0, 0, &H);
+
+    std::cout << std::setprecision(15);
+    std::vector<real> Eigen = GenSymBandEigenvalues(H, S);
+    ioln("Eigenvalues");
+
+    if (Eigen.size() > 10)
+        Eigen.resize(10);
+    io::Print(Eigen);
+
+    la::arnoldi<real> Kry(sqrH, NumKrylov);
+    ioln("Kry");
+    std::vector<real> KryValues = Kry.Eigenvalues();
+    io::Print(KryValues);
+}
+}
+}
+}
 int main(int argc, char ** argv)
 {
     std::cout << "SIZES " << sizeof(double) << " " << sizeof(long double) << std::endl;
@@ -130,55 +184,10 @@ int main(int argc, char ** argv)
     ioln("\nSettings loaded");
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////                    Main                                                 ///////////////
+////////////                                Main                                     ///////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    size_t No = Knots.size() -k;
-    size_t IgnoreStart = 1, IgnoreEnd = 1;
-
-    std::cout << "k = " << k << ", No = " << No << " Ns = " << No - IgnoreStart-IgnoreEnd << ";\n";
-
-    size_t GaussOrder = k;
-    quadrature::gauss<real, real> Gauss(GaussOrder);
-
     int l = 0;
-    la::band<real> HFull = Hydrogen(Gauss, l, k, Knots);
-    std::cout << "Hydrogen built\n";
-    
-    la::band<real> H = Shrink(HFull, IgnoreStart, IgnoreEnd);
-
-    std::cout << "H.dim = ("<< H.Row() << ", " << H.Column() << ");\n";
-
-    la::band<real> SFull(No, k);
-    spline::SymmOverlap(Gauss, Knots, k, SFull, [](real x){return 1.0;}, spline::BSpline<real>, spline::BSpline<real>);
-    la::band<real> S = Shrink(SFull, IgnoreStart, IgnoreEnd);
-
-    la::sqrarray<real> sqrH(1);
-    sqrH.AddBlock(0, 0, &H);
-
-#ifdef DEBUG
-    MatTest(H, S);
-#endif
-
-    la::arnoldi<real> Kry(sqrH, NumKrylov);
-    ioln("Kry");
-    std::vector<real> KryValues = Kry.Eigenvalues();
-    io::Print(KryValues);
-
-    ioln("Diagonalise");
-    std::vector<real> SEigen = SymBandEigenvalues(H);
-    ioln("EIGEN");
-    if (SEigen.size() > 10)
-        SEigen.resize(10);
-    io::Print(SEigen);
-
-    std::cout << std::setprecision(15);
-    std::vector<real> Eigen = GenSymBandEigenvalues(H, S);
-    ioln("Eigenvalues");
-
-    if (Eigen.size() > 10)
-        Eigen.resize(10);
-    io::Print(Eigen);
+    quant::abinitio::Hydrogen(Knots, k, l, NumKrylov);
 
     return 0;
 }

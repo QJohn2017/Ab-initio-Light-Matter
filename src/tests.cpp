@@ -325,6 +325,11 @@ TEST(LinearAlgebra, Vector)
     ASSERT_DOUBLE_EQ(Dot1, RefDot) << "Dot product failed.\n";
     ASSERT_DOUBLE_EQ(Dot2, RefDot) << "Dot product failed.\n";
 }
+
+
+//TODO: Add unit tests for arrays
+//TODO: Add a unit test making sure a diagonal array is the same as a k=1 banded array.
+
 /*
  *
  * Krylov subspace test (Arnoldi method with a symmetric matrix)

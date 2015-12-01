@@ -41,9 +41,11 @@ class trape : public pulse<real, real>
         Ramp = ramp * 2.0 * pi<real>() / W0;
         Main = main * pi<real>() / W0;
         TShift = Ramp+Main;
-        Duration = 2.0*(Ramp + Main) + Train*Tau + Shift;
     }
-
+    real End(void)
+    {
+        return 2.0*(Ramp + Main) + Train*Tau + Shift;
+    }
 };
 
 class ltrape : public trape

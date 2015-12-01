@@ -83,7 +83,7 @@ int main(int argc, char * argv[])
 //     la::fullblock<real> DipoleVelocity, DipoleMoment;
 
     std::vector<real> Knots = nc::GetVector<real>(File, KName);
-    std::vector<real> Energy = nc::GetVector<real>(File, EName);
+    la::vec<real> Energy = nc::GetVec<real>(File, EName);
     std::cout << "Knots = " << Knots.size() << std::endl;
 
     la::fullblock<real> DipoleTest = nc::GetBlock<real>("in/Basis.0.1.nc", "DipoleMoment");
@@ -99,11 +99,9 @@ int main(int argc, char * argv[])
     InternalConf.lookupValue("QuadOrder", GaussN);
 
     la::sqrarray<real> Hamiltonian(2);
-
     Hamiltonian.AddBlock(0, 1, &DipoleTest);
-////////////////////////////////////////////////////////////////
 
-//////TEST//////
+//////TEST//////////////////////////////////////////////////////////////////////
     std::vector<size_t> In = {DipoleTest.Row(), DipoleTest.Column()};
     la::vec<real> Vec1(In), Vec2(In);
     Vec2.Set(1.0);
@@ -115,6 +113,8 @@ int main(int argc, char * argv[])
     laser::field<real, real> Laser(GaussN);
     Config(Conf, Laser);
 
+    exit(0);
+    
     int NumSteps = 1000;
     sequences::linear seq(Laser.End, NumSteps);
     real t = 0.0, Time = 0.0;

@@ -56,6 +56,8 @@ class block
     {
         return M;
     }
+    
+    //Note, child classes should throw errors on incorrect access, where incorrect corresponds to "the return value doesn't exist, or would be zero at all times".
     virtual T & operator()(int i) = 0;
     virtual T & operator()(int i, int j) = 0;
     virtual size_t NumElem() = 0;
@@ -189,6 +191,60 @@ class band : public block<T, U>
         return Data.at(size_t((i*2+1)*(k-1) + j));
     }
 };
+
+template <class T, class U=T>
+class diag : public block<T, U>
+{
+    int k;
+    std::vector<T> Data;
+    public :
+    //For working out calculation complexity
+    size_t NumElem()
+    {
+        return this->N;
+    }
+    diag(std::vector<real> & Init, size_t N) : block<T, U>(N, N)
+    {
+        Data = Init;
+    }
+    diag(std::initializer_list<T> Init, size_t N) : diag(N)
+    {
+        if (NumElem() != Init.size())
+        {
+            DP();
+            throw(SIZE_MISMATCH);
+        }
+        std::copy(Init.begin(), Init.end(), Data.begin());
+    }
+    void Resize(size_t i)
+    {
+        this->N = this->M = i;
+        Data.resize(NumElem());
+    }
+    slice<U> operator*(slice<U> B)
+    {
+        size_t Sz = this->Row(); //Square matrix, Rows() == Columns()
+        slice<U> A(Sz);
+        if (B.Size() != Sz)
+            throw(SIZE_MISMATCH);
+        for (int i = 0; i < int(Sz); i++)
+            A[i] += this->operator()(i) * B[i];
+        return A;
+    }
+
+    T & operator()(int i) // const
+    {
+        return Data.at(i);
+    }
+    T & operator()(int i, int j) // const
+    {
+        if (i == j)
+            return Data.at(size_t(i));
+        else
+            throw (OUT_OF_BOUNDS);  //This could be trivially compensated for, but it's really a sign of an algorithm problem.
+    }
+};
+
 template <class T>
 band<T> Convert(fullblock<T> & B, int k)
 {

@@ -33,6 +33,7 @@ class gauss : public pulse<real, real>
     real A, B, C, D, Z0, Zd;
     real E0, W0, CEP;
     real GShift;
+    real Duration;
     carrier Shape;
     public :
 
@@ -49,6 +50,10 @@ class gauss : public pulse<real, real>
         real TauChirp = 2.0 * sqrt(2.0 * log(2.0) * Zd / (Z0*Z0));
         GShift = Length * TauChirp / 2.0;
         Duration = Length * TauChirp + Shift + Tau*Train;
+    }
+    real End(void)
+    {
+        return Duration;
     }
     real PulseDef(real t)
     {
